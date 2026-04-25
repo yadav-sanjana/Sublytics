@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sublytics-api-migrate
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: sublytics-api-migrate
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: sublytics-api:latest
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-lc", "npx prisma migrate deploy"]
+          envFrom:
+            - configMapRef:
+                name: sublytics-api-config
+            - secretRef:
+                name: sublytics-api-secrets

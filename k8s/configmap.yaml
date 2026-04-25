@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sublytics-api-config
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  # Your DB should exist in-cluster; update this to your Postgres Service DNS name.
+  DATABASE_URL: "postgresql://postgres:postgres@postgres.sublytics.svc.cluster.local:5432/sublytics?schema=public"

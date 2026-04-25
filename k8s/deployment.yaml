@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sublytics-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sublytics-api
+  template:
+    metadata:
+      labels:
+        app: sublytics-api
+    spec:
+      containers:
+        - name: api
+          image: sublytics-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: sublytics-api-config
+            - secretRef:
+                name: sublytics-api-secrets
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

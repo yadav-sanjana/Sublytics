@@ -1,0 +1,42 @@
+name: deploy-kubectl
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        run: |
+          docker build -t sublytics-api:latest .
+
+      # If you use a real registry, replace this step with docker login + docker push,
+      # and update k8s/deployment.yaml image to that registry reference.
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.0
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${KUBECONFIG_B64}" | base64 -d > ~/.kube/config
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+
+      - name: Deploy manifests
+        run: |
+          kubectl apply -k k8s
+          kubectl -n sublytics wait --for=condition=complete job/sublytics-api-migrate --timeout=120s || true
+          kubectl -n sublytics rollout status deployment/sublytics-api --timeout=180s

@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum SubscriptionStatus {
+  incomplete
+  incomplete_expired
+  trialing
+  active
+  past_due
+  canceled
+  unpaid
+  paused
+}
+
+enum PaymentStatus {
+  requires_payment_method
+  requires_confirmation
+  requires_action
+  processing
+  succeeded
+  canceled
+  failed
+}
+
+model User {
+  id               Int            @id @default(autoincrement())
+  email            String         @unique
+  passwordHash     String
+  role             Role           @default(user)
+  stripeCustomerId String?        @unique
+
+  subscriptions    Subscription[]
+  payments         Payment[]
+  files            File[]
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([email])
+  @@index([stripeCustomerId])
+}
+
+model Subscription {
+  id                    Int                @id @default(autoincrement())
+  userId                Int
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  stripeSubscriptionId  String             @unique
+  stripePriceId         String
+  status                SubscriptionStatus
+  cancelAtPeriodEnd     Boolean            @default(false)
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+
+  payments              Payment[]
+
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@index([stripePriceId])
+  @@index([status])
+}
+
+model Payment {
+  id                   Int           @id @default(autoincrement())
+  userId               Int
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subscriptionId       Int?
+  subscription         Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  stripeInvoiceId      String?       @unique
+  stripePaymentIntentId String?      @unique
+
+  amount               Int
+  currency             String
+  status               PaymentStatus
+  paidAt               DateTime?
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([stripeInvoiceId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+}
+
+model File {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  key       String   @unique
+  url       String
+  mimeType  String?
+  size      Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model StripeWebhookEvent {
+  id           Int      @id @default(autoincrement())
+  stripeEventId String   @unique
+  type         String
+  createdAt    DateTime @default(now())
+  processedAt  DateTime?
+
+  @@index([type])
+  @@index([createdAt])
+}

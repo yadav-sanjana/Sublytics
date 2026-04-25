@@ -1,0 +1,35 @@
+services:
+  app:
+    build: .
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/sublytics?schema=public
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_TOKEN_SECRET:-replace_me_dev_secret_min_20_chars}
+      JWT_ACCESS_TOKEN_TTL_SECONDS: ${JWT_ACCESS_TOKEN_TTL_SECONDS:-900}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_replace_me}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_replace_me}
+      STRIPE_PRICE_BASIC: ${STRIPE_PRICE_BASIC:-price_replace_me_basic}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-price_replace_me_pro}
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-sublytics-uploads}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-replace_me_dev}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-replace_me_dev}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sublytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - sublytics_pg:/var/lib/postgresql/data
+
+volumes:
+  sublytics_pg:
